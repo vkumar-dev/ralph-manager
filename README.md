@@ -104,6 +104,8 @@ cd /path/to/project
 
 ## GUI Features
 
+> **📸 Note:** Running in WSL? See [Known Issues](.github/KNOWN_ISSUES.md) for how to add screenshots.
+
 ![Ralph Manager GUI](public/screenshot.png)
 
 ### 1. Project Browser
