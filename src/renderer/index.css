@@ -1,0 +1,273 @@
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #0d1117;
+  color: #c9d1d9;
+  overflow: hidden;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #161b22;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8b949e;
+}
+
+/* Code editor styles */
+.editor-container {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+textarea.editor-textarea {
+  width: 100%;
+  height: 100%;
+  background-color: #0d1117;
+  color: #c9d1d9;
+  border: none;
+  padding: 16px;
+  resize: none;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  outline: none;
+}
+
+textarea.editor-textarea:focus {
+  background-color: #161b22;
+}
+
+/* Terminal styles */
+.terminal-container {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 13px;
+  background-color: #0d1117;
+  padding: 12px;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.terminal-output {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.terminal-output.stdout {
+  color: #c9d1d9;
+}
+
+.terminal-output.stderr {
+  color: #ff7b72;
+}
+
+.terminal-output.info {
+  color: #58a6ff;
+}
+
+.terminal-output.success {
+  color: #3fb950;
+}
+
+/* Button styles */
+.btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background-color: #238636;
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background-color: #2ea043;
+}
+
+.btn-primary:disabled {
+  background-color: #1f6feb;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background-color: #21262d;
+  color: #c9d1d9;
+  border-color: #30363d;
+}
+
+.btn-secondary:hover {
+  background-color: #30363d;
+}
+
+.btn-danger {
+  background-color: #da3633;
+  color: #ffffff;
+}
+
+.btn-danger:hover {
+  background-color: #f85149;
+}
+
+.btn-sm {
+  padding: 4px 12px;
+  font-size: 12px;
+}
+
+/* Input styles */
+.input {
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: #c9d1d9;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  border-color: #1f6feb;
+}
+
+.input::placeholder {
+  color: #8b949e;
+}
+
+/* Card styles */
+.card {
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.card-header {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #c9d1d9;
+}
+
+/* Tab styles */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #30363d;
+  background-color: #161b22;
+}
+
+.tab {
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #8b949e;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  color: #c9d1d9;
+}
+
+.tab-active {
+  color: #c9d1d9;
+  border-bottom-color: #f78166;
+}
+
+/* Status badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.badge-success {
+  background-color: rgba(63, 185, 80, 0.15);
+  color: #3fb950;
+}
+
+.badge-error {
+  background-color: rgba(218, 54, 51, 0.15);
+  color: #ff7b72;
+}
+
+.badge-warning {
+  background-color: rgba(210, 153, 34, 0.15);
+  color: #d29922;
+}
+
+.badge-info {
+  background-color: rgba(88, 166, 255, 0.15);
+  color: #58a6ff;
+}
+
+/* Tooltip */
+.tooltip {
+  position: relative;
+}
+
+.tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #1f6feb;
+  color: #ffffff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 1000;
+}
+
+.tooltip:hover::after {
+  opacity: 1;
+}

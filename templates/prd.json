@@ -1,0 +1,32 @@
+{
+    "title": "{{PROJECT_NAME}}",
+    "description": "{{PROJECT_DESCRIPTION}}",
+    "created_at": "{{CREATED_AT}}",
+    "github_repo": "{{GITHUB_REPO}}",
+    "tasks": [
+        {
+            "id": "task-001",
+            "description": "Analyze project requirements and create implementation plan",
+            "passes": false,
+            "notes": "",
+            "priority": "high",
+            "risk": "low"
+        },
+        {
+            "id": "task-002",
+            "description": "Set up project structure and configuration",
+            "passes": false,
+            "notes": "",
+            "priority": "high",
+            "risk": "low"
+        },
+        {
+            "id": "task-003",
+            "description": "Implement core functionality",
+            "passes": false,
+            "notes": "",
+            "priority": "medium",
+            "risk": "medium"
+        }
+    ]
+}

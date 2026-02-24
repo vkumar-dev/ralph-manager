@@ -1,0 +1,10 @@
+# Ralph Loop Progress Log
+
+Project: {{PROJECT_NAME}}
+Started: {{STARTED_AT}}
+GitHub Repo: {{GITHUB_REPO}}
+
+---
+
+## Session Log
+

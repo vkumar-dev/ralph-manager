@@ -1,0 +1,54 @@
+{
+  "name": "ralph-manager",
+  "version": "1.0.0",
+  "description": "Ralph Manager - A GUI and CLI for managing AI agent loops with file-based state",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "build": "vite build",
+    "build:electron": "npm run build && electron-builder",
+    "test": "jest"
+  },
+  "keywords": [
+    "ralph",
+    "ai-agent",
+    "automation",
+    "github",
+    "cli",
+    "gui"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "electron": "^28.0.0",
+    "node-pty": "^1.0.0",
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.0",
+    "chokidar": "^3.5.3",
+    "simple-git": "^3.21.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.0.0",
+    "concurrently": "^8.2.2",
+    "electron-builder": "^24.9.1",
+    "jest": "^29.7.0",
+    "tailwindcss": "^3.4.0",
+    "postcss": "^8.4.32",
+    "autoprefixer": "^10.4.16"
+  },
+  "build": {
+    "appId": "com.ralph.manager",
+    "productName": "Ralph Manager",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ]
+  }
+}

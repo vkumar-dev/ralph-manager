@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ralph Manager</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background-color: #0d1117;
+        color: #c9d1d9;
+        overflow: hidden;
+      }
+      #root { width: 100vw; height: 100vh; }
+      .app { display: flex; flex-direction: column; height: 100vh; }
+      .title-bar {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 12px 20px; background-color: #161b22;
+        border-bottom: 1px solid #30363d;
+      }
+      .toolbar {
+        display: flex; align-items: center; gap: 12px;
+        padding: 12px 20px; background-color: #0d1117;
+        border-bottom: 1px solid #30363d;
+      }
+      .tabs { display: flex; border-bottom: 1px solid #30363d; background-color: #161b22; }
+      .tab {
+        padding: 12px 20px; background: none; border: none;
+        border-bottom: 2px solid transparent; color: #8b949e;
+        cursor: pointer; font-size: 14px; font-weight: 500;
+      }
+      .tab:hover { color: #c9d1d9; }
+      .tab-active { color: #c9d1d9; border-bottom-color: #f78166; }
+      .content { flex: 1; overflow: hidden; }
+      .btn {
+        padding: 8px 16px; border-radius: 6px; border: 1px solid transparent;
+        font-size: 14px; font-weight: 500; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 8px;
+      }
+      .btn-primary { background-color: #238636; color: #ffffff; }
+      .btn-primary:hover { background-color: #2ea043; }
+      .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+      .btn-secondary { background-color: #21262d; color: #c9d1d9; border-color: #30363d; }
+      .btn-secondary:hover { background-color: #30363d; }
+      .btn-sm { padding: 4px 12px; font-size: 12px; }
+      .badge {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 4px 10px; border-radius: 100px; font-size: 12px;
+      }
+      .badge-success { background-color: rgba(63, 185, 80, 0.15); color: #3fb950; }
+      .badge-info { background-color: rgba(88, 166, 255, 0.15); color: #58a6ff; }
+      .badge-warning { background-color: rgba(210, 153, 34, 0.15); color: #d29922; }
+      .input {
+        background-color: #0d1117; border: 1px solid #30363d;
+        border-radius: 6px; padding: 8px 12px; color: #c9d1d9;
+        font-size: 14px; outline: none; width: 100%;
+      }
+      .input:focus { border-color: #1f6feb; }
+      .modal-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 1000;
+      }
+      .modal {
+        background-color: #161b22; border: 1px solid #30363d;
+        border-radius: 8px; padding: 24px; min-width: 400px;
+      }
+      .file-list { padding: 16px; overflow-y: auto; height: calc(100vh - 200px); }
+      .file-item {
+        display: flex; align-items: center; gap: 8px;
+        padding: 8px 12px; margin-bottom: 4px;
+        background-color: #161b22; border: 1px solid #30363d;
+        border-radius: 6px; cursor: pointer;
+      }
+      .file-item:hover { background-color: #21262d; }
+      .editor-container { display: flex; flex-direction: column; height: 100%; }
+      .editor-textarea {
+        flex: 1; background-color: #0d1117; color: #c9d1d9;
+        border: none; padding: 16px;
+        font-family: 'SF Mono', 'Fira Code', monospace;
+        font-size: 14px; resize: none; outline: none;
+      }
+      .terminal-container {
+        padding: 12px 16px; font-family: 'SF Mono', 'Fira Code', monospace;
+        font-size: 13px; height: 100%; overflow-y: auto;
+        background-color: #0d1117;
+      }
+      .welcome {
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        height: 100%; color: #8b949e;
+      }
+      .form-group { margin-bottom: 16px; }
+      .form-group label {
+        display: block; color: #8b949e; font-size: 13px; margin-bottom: 6px;
+      }
+      .modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
+      .repo-item {
+        padding: 12px; background-color: #161b22;
+        border: 1px solid #30363d; border-radius: 6px; margin-bottom: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      const { ipcRenderer } = require('electron');
+      
+      // State
+      let projectPath = null;
+      let activeTab = 'browser';
+      let selectedFile = null;
+      let projectFiles = [];
+      let isLoopRunning = false;
+      let showNewProjectModal = false;
+      let newProjectName = '';
+      let newProjectDesc = '';
+      let selectedProjectDir = null;
+      
+      // Render functions
+      function render() {
+        const root = document.getElementById('root');
+        root.innerHTML = `
+          <div class="app">
+            ${renderTitleBar()}
+            ${renderToolbar()}
+            ${renderTabs()}
+            ${renderContent()}
+            ${renderModal()}
+          </div>
+        `;
+        attachEventListeners();
+      }
+      
+      function renderTitleBar() {
+        return `
+          <div class="title-bar">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 18px; font-weight: 600;">🔄 Ralph Manager</span>
+              ${projectPath ? `<span style="font-size: 12px; color: #8b949e;">${projectPath}</span>` : ''}
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span class="badge ${isLoopRunning ? 'badge-success' : 'badge-info'}">
+                <span>●</span> ${isLoopRunning ? 'Running' : 'Stopped'}
+              </span>
+              <button 
+                class="btn ${isLoopRunning ? 'btn-secondary' : 'btn-primary'}"
+                id="loopBtn"
+                ${!projectPath || !hasRalphLoop() ? 'disabled' : ''}
+              >
+                ${isLoopRunning ? '⏹ Stop Loop' : '▶ Start Loop'}
+              </button>
+            </div>
+          </div>
+        `;
+      }
+      
+      function renderToolbar() {
+        return `
+          <div class="toolbar">
+            <button class="btn btn-primary" id="openProjectBtn">📁 Open Project</button>
+            <button class="btn btn-secondary" id="newProjectBtn">✨ New Project</button>
+            ${projectPath ? `
+              <span style="color: #30363d;">|</span>
+              <button class="btn btn-secondary btn-sm" id="refreshBtn">🔄 Refresh</button>
+              <span style="color: #8b949e; font-size: 13px;">${projectPath}</span>
+              ${!hasRalphLoop() ? '<span class="badge badge-warning">⚠ No ralph-loop.sh</span>' : ''}
+            ` : ''}
+          </div>
+        `;
+      }
+      
+      function renderTabs() {
+        return `
+          <div class="tabs">
+            <button class="tab ${activeTab === 'browser' ? 'tab-active' : ''}" data-tab="browser">📂 Project Files</button>
+            <button class="tab ${activeTab === 'editor' ? 'tab-active' : ''}" data-tab="editor" ${!selectedFile ? 'disabled' : ''}>📝 Editor ${selectedFile ? `- ${selectedFile.name}` : ''}</button>
+            <button class="tab ${activeTab === 'terminal' ? 'tab-active' : ''}" data-tab="terminal">💻 Terminal</button>
+            <button class="tab ${activeTab === 'github' ? 'tab-active' : ''}" data-tab="github">🐙 GitHub</button>
+          </div>
+        `;
+      }
+      
+      function renderContent() {
+        if (!projectPath) {
+          return `
+            <div class="welcome">
+              <span style="font-size: 64px; margin-bottom: 20px;">🔄</span>
+              <h2 style="font-size: 24px; margin-bottom: 12px; color: #c9d1d9;">Welcome to Ralph Manager</h2>
+              <p style="margin-bottom: 24px; text-align: center; max-width: 500px;">
+                Open an existing Ralph project or create a new one to get started
+              </p>
+              <div style="display: flex; gap: 12px;">
+                <button class="btn btn-primary" id="welcomeOpenBtn">📁 Open Project</button>
+                <button class="btn btn-secondary" id="welcomeNewBtn">✨ New Project</button>
+              </div>
+            </div>
+          `;
+        }
+        
+        switch(activeTab) {
+          case 'browser': return renderBrowser();
+          case 'editor': return renderEditor();
+          case 'terminal': return renderTerminal();
+          case 'github': return renderGitHub();
+          default: return renderBrowser();
+        }
+      }
+      
+      function hasRalphLoop() {
+        return projectFiles.some(f => f.name === 'ralph-loop.sh');
+      }
+      
+      function renderBrowser() {
+        const ralphFiles = projectFiles.filter(f => isRalphFile(f.name));
+        const otherFiles = projectFiles.filter(f => !isRalphFile(f.name));
+        
+        return `
+          <div style="display: flex; height: 100%;">
+            <div style="width: 300px; border-right: 1px solid #30363d; overflow-y: auto; padding: 16px;">
+              <h3 style="font-size: 14px; color: #8b949e; margin-bottom: 12px; text-transform: uppercase;">Ralph Files</h3>
+              ${ralphFiles.map(file => `
+                <div class="file-item" data-file='${JSON.stringify(file).replace(/'/g, "&#39;")}'>
+                  <span>${getFileIcon(file.name)}</span>
+                  <span>${file.name}</span>
+                </div>
+              `).join('')}
+              
+              <h3 style="font-size: 14px; color: #8b949e; margin: 20px 0 12px; text-transform: uppercase;">Project</h3>
+              ${otherFiles.map(file => `
+                <div class="file-item" data-file='${JSON.stringify(file).replace(/'/g, "&#39;")}'>
+                  <span>${file.isDirectory ? '📁' : getFileIcon(file.name)}</span>
+                  <span>${file.name}</span>
+                  ${file.isDirectory && file.name === 'codebase' ? '<span class="badge badge-info" style="margin-left: auto; font-size: 10px;">Agent</span>' : ''}
+                </div>
+              `).join('')}
+            </div>
+            <div style="flex: 1; padding: 24px; color: #8b949e;">
+              <p>Select a file to view and edit</p>
+            </div>
+          </div>
+        `;
+      }
+      
+      function isRalphFile(name) {
+        return name.startsWith('.ralph') || name === 'ralph-loop.sh' || name === 'prd.json' || name === 'progress.txt';
+      }
+      
+      function renderEditor() {
+        if (!selectedFile) {
+          return '<div style="padding: 40px; color: #8b949e; text-align: center;">No file selected</div>';
+        }
+        return `
+          <div class="editor-container">
+            <div style="padding: 8px 16px; background-color: #161b22; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 500;">${selectedFile.name}</span>
+              <button class="btn btn-primary btn-sm" id="saveFileBtn">💾 Save</button>
+            </div>
+            <textarea class="editor-textarea" id="editorContent" spellcheck="false">${(selectedFile.content || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+          </div>
+        `;
+      }
+      
+      function renderTerminal() {
+        return `
+          <div class="terminal-container" id="terminalOutput">
+            <p style="color: #8b949e;">Terminal output will appear here when you start a loop...</p>
+          </div>
+        `;
+      }
+      
+      function renderGitHub() {
+        return `
+          <div style="padding: 40px; text-align: center; color: #8b949e;">
+            <span style="font-size: 48px;">🐙</span>
+            <h3 style="margin: 16px 0;">GitHub Integration</h3>
+            <p>Make sure gh CLI is installed and authenticated</p>
+            <button class="btn btn-primary" style="margin-top: 16px;" id="listReposBtn">🔄 List Repos</button>
+            <div id="repoList" style="margin-top: 20px; text-align: left;"></div>
+          </div>
+        `;
+      }
+      
+      function renderModal() {
+        if (!showNewProjectModal) return '';
+        
+        return `
+          <div class="modal-overlay" id="modalOverlay">
+            <div class="modal">
+              <h3 style="font-size: 18px; color: #c9d1d9; margin-bottom: 16px;">Create New Ralph Project</h3>
+              <div class="form-group">
+                <label>Project Name</label>
+                <input type="text" class="input" id="newProjectNameInput" placeholder="my-awesome-project" value="${newProjectName}" />
+              </div>
+              <div class="form-group">
+                <label>Description (optional)</label>
+                <input type="text" class="input" id="newProjectDescInput" placeholder="What will you build?" value="${newProjectDesc}" />
+              </div>
+              <div class="modal-actions">
+                <button class="btn btn-secondary" id="cancelProjectBtn">Cancel</button>
+                <button class="btn btn-primary" id="createProjectBtn" ${!newProjectName.trim() ? 'disabled' : ''}>Create Project</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      
+      function getFileIcon(name) {
+        const ext = name.split('.').pop().toLowerCase();
+        const icons = { json: '📋', md: '📝', txt: '📄', sh: '📜', js: '📜', ts: '📜', html: '🌐', css: '🎨', py: '🐍' };
+        return icons[ext] || '📄';
+      }
+      
+      function attachEventListeners() {
+        // Title bar
+        const loopBtn = document.getElementById('loopBtn');
+        if (loopBtn) loopBtn.addEventListener('click', handleLoopClick);
+        
+        // Toolbar
+        const openProjectBtn = document.getElementById('openProjectBtn');
+        if (openProjectBtn) openProjectBtn.addEventListener('click', handleOpenProject);
+        
+        const newProjectBtn = document.getElementById('newProjectBtn');
+        if (newProjectBtn) newProjectBtn.addEventListener('click', handleNewProject);
+        
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) refreshBtn.addEventListener('click', loadProjectFiles);
+        
+        // Welcome buttons
+        const welcomeOpenBtn = document.getElementById('welcomeOpenBtn');
+        if (welcomeOpenBtn) welcomeOpenBtn.addEventListener('click', handleOpenProject);
+        
+        const welcomeNewBtn = document.getElementById('welcomeNewBtn');
+        if (welcomeNewBtn) welcomeNewBtn.addEventListener('click', handleNewProject);
+        
+        // Tabs
+        document.querySelectorAll('.tab').forEach(tab => {
+          tab.addEventListener('click', (e) => {
+            const tabName = e.target.dataset.tab;
+            if (tabName) {
+              activeTab = tabName;
+              render();
+            }
+          });
+        });
+        
+        // File items
+        document.querySelectorAll('.file-item[data-file]').forEach(item => {
+          item.addEventListener('click', () => {
+            const fileData = item.dataset.file;
+            try {
+              const file = JSON.parse(fileData.replace(/&#39;/g, "'"));
+              handleFileSelect(file);
+            } catch (e) {
+              console.error('Error parsing file data:', e);
+            }
+          });
+        });
+        
+        // Editor
+        const saveFileBtn = document.getElementById('saveFileBtn');
+        if (saveFileBtn) saveFileBtn.addEventListener('click', handleSaveFile);
+        
+        // GitHub
+        const listReposBtn = document.getElementById('listReposBtn');
+        if (listReposBtn) listReposBtn.addEventListener('click', handleListRepos);
+        
+        // Modal
+        if (showNewProjectModal) {
+          const modalOverlay = document.getElementById('modalOverlay');
+          if (modalOverlay) modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) handleCancelNewProject();
+          });
+          
+          const newProjectNameInput = document.getElementById('newProjectNameInput');
+          if (newProjectNameInput) {
+            newProjectNameInput.addEventListener('input', (e) => {
+              newProjectName = e.target.value;
+              render();
+              // Refocus input after render
+              setTimeout(() => {
+                const input = document.getElementById('newProjectNameInput');
+                if (input) {
+                  input.focus();
+                  input.setSelectionRange(input.value.length, input.value.length);
+                }
+              }, 10);
+            });
+            // Auto-focus on mount
+            setTimeout(() => newProjectNameInput.focus(), 100);
+          }
+          
+          const newProjectDescInput = document.getElementById('newProjectDescInput');
+          if (newProjectDescInput) {
+            newProjectDescInput.addEventListener('input', (e) => {
+              newProjectDesc = e.target.value;
+              render();
+              setTimeout(() => {
+                const input = document.getElementById('newProjectDescInput');
+                if (input) {
+                  input.focus();
+                  input.setSelectionRange(input.value.length, input.value.length);
+                }
+              }, 10);
+            });
+          }
+          
+          const cancelProjectBtn = document.getElementById('cancelProjectBtn');
+          if (cancelProjectBtn) cancelProjectBtn.addEventListener('click', handleCancelNewProject);
+          
+          const createProjectBtn = document.getElementById('createProjectBtn');
+          if (createProjectBtn) createProjectBtn.addEventListener('click', handleCreateProject);
+        }
+      }
+      
+      // Handlers
+      async function handleOpenProject() {
+        const result = await ipcRenderer.invoke('select-directory');
+        if (result.success) {
+          projectPath = result.path;
+          await loadProjectFiles();
+          activeTab = 'browser';
+          render();
+        }
+      }
+      
+      async function loadProjectFiles() {
+        const result = await ipcRenderer.invoke('list-directory', projectPath);
+        if (result.success) {
+          projectFiles = result.items;
+          render();
+        }
+      }
+      
+      function handleNewProject() {
+        showNewProjectModal = true;
+        newProjectName = '';
+        newProjectDesc = '';
+        render();
+      }
+      
+      function handleCancelNewProject() {
+        showNewProjectModal = false;
+        newProjectName = '';
+        newProjectDesc = '';
+        render();
+      }
+      
+      async function handleCreateProject() {
+        if (!newProjectName.trim()) return;
+        
+        const dirResult = await ipcRenderer.invoke('select-directory');
+        if (dirResult.success) {
+          const projectDir = `${dirResult.path}/${newProjectName.trim()}`;
+          const initResult = await ipcRenderer.invoke('init-ralph-project', projectDir, newProjectName, newProjectDesc);
+          
+          if (initResult.success) {
+            projectPath = projectDir;
+            await loadProjectFiles();
+            showNewProjectModal = false;
+            newProjectName = '';
+            newProjectDesc = '';
+            activeTab = 'browser';
+            render();
+          } else {
+            alert('Failed to create project: ' + initResult.error);
+          }
+        }
+      }
+      
+      async function handleFileSelect(file) {
+        const result = await ipcRenderer.invoke('read-file', file.path);
+        if (result.success) {
+          selectedFile = { ...file, content: result.content };
+          activeTab = 'editor';
+          render();
+        }
+      }
+      
+      async function handleSaveFile() {
+        if (!selectedFile) return;
+        const editorContent = document.getElementById('editorContent');
+        if (!editorContent) return;
+        
+        const content = editorContent.value;
+        const result = await ipcRenderer.invoke('write-file', selectedFile.path, content);
+        if (result.success) {
+          alert('File saved!');
+          selectedFile.content = content;
+        } else {
+          alert('Failed to save: ' + result.error);
+        }
+      }
+      
+      async function handleLoopClick() {
+        if (isLoopRunning) {
+          const result = await ipcRenderer.invoke('stop-ralph-loop');
+          if (result.success) {
+            isLoopRunning = false;
+            render();
+          }
+        } else {
+          const scriptPath = `${projectPath}/ralph-loop.sh`;
+          const result = await ipcRenderer.invoke('run-ralph-loop', scriptPath, projectPath);
+          if (result.success) {
+            isLoopRunning = true;
+            activeTab = 'terminal';
+            render();
+          } else {
+            alert('Failed to start loop: ' + result.error);
+          }
+        }
+      }
+      
+      async function handleListRepos() {
+        const result = await ipcRenderer.invoke('gh-list-repos');
+        const repoList = document.getElementById('repoList');
+        if (repoList) {
+          if (result.success && result.repos) {
+            repoList.innerHTML = result.repos.map(repo => `
+              <div class="repo-item">
+                <strong>${repo.name_with_owner || repo.name}</strong>
+                ${repo.description ? `<p style="color: #8b949e; font-size: 13px; margin-top: 4px;">${repo.description}</p>` : ''}
+              </div>
+            `).join('');
+          } else {
+            repoList.innerHTML = `<p style="color: #ff7b72;">${result.error || 'Failed to load repos'}</p>`;
+          }
+        }
+      }
+      
+      // Terminal output listener
+      ipcRenderer.on('terminal-output', (event, { type, data }) => {
+        const terminal = document.getElementById('terminalOutput');
+        if (terminal) {
+          // Remove placeholder if exists
+          const placeholder = terminal.querySelector('p');
+          if (placeholder) placeholder.remove();
+          
+          const line = document.createElement('div');
+          line.style.color = type === 'stderr' ? '#ff7b72' : type === 'close' ? '#58a6ff' : '#c9d1d9';
+          line.style.marginBottom = '4px';
+          line.style.whiteSpace = 'pre-wrap';
+          line.textContent = `[${new Date().toLocaleTimeString()}] ${data}`;
+          terminal.appendChild(line);
+          terminal.scrollTop = terminal.scrollHeight;
+        }
+      });
+      
+      // Initial render
+      render();
+    </script>
+  </body>
+</html>
