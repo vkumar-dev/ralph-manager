@@ -104,6 +104,8 @@ cd /path/to/project
 
 ## GUI Features
 
+![Ralph Manager GUI](public/screenshot.png)
+
 ### 1. Project Browser
 - Browse all project files
 - Quick access to Ralph-specific files (PRD, progress, prompt)
